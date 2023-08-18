@@ -119,6 +119,71 @@ public class SqlInjectionLesson8x extends AssignmentEndpoint {
     }
   }
 
+    @PostMapping("/SqlInjection/attack8x")
+  @ResponseBody
+  public AttackResult completed2(@RequestParam String name, @RequestParam String auth_tan) {
+    return injectableQueryConfidentiality2(name, auth_tan);
+  }
+
+  protected AttackResult injectableQueryConfidentiality2(String name, String auth_tan) {
+      System.out.println("xxx");
+      System.out.println("xxx");
+    StringBuilder output = new StringBuilder();
+    String query =
+        "SELECT * FROM employees WHERE last_name = '"
+            + name
+            + "' AND auth_tan = '"
+            + auth_tan
+            + "'";
+
+    try (Connection connection = dataSource.getConnection()) {
+      try {
+        Statement statement =
+            connection.createStatement(
+                ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
+        log(connection, query);
+        ResultSet results = statement.executeQuery(query);
+
+        ResultSet results2 = statement.executeQuery(query);
+           if (results2.getStatement() != null) {
+           }
+
+        if (results.getStatement() != null) {
+          if (results.first()) {
+            output.append(generateTable(results));
+            results.last();
+
+            if (results.getRow() > 1) {
+              // more than one record, the user succeeded
+              return success(this)
+                  .feedback("sql-injection.8.success")
+                  .output(output.toString())
+                  .build();
+            } else {
+              // only one record
+              return failed(this).feedback("sql-injection.8.one").output(output.toString()).build();
+            }
+
+          } else {
+            // no results
+            return failed(this).feedback("sql-injection.8.no.results").build();
+          }
+        } else {
+          return failed(this).build();
+        }
+      } catch (SQLException e) {
+        return failed(this)
+            .output("<br><span class='feedback-negative'>" + e.getMessage() + "</span>")
+            .build();
+      }
+
+    } catch (Exception e) {
+      return failed(this)
+          .output("<br><span class='feedback-negative'>" + e.getMessage() + "</span>")
+          .build();
+    }
+  }
+
   public static String generateTable(ResultSet results) throws SQLException {
     ResultSetMetaData resultsMetaData = results.getMetaData();
     int numColumns = resultsMetaData.getColumnCount();
